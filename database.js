@@ -10,22 +10,8 @@ var dbFilePath = pathTool.join(electron.app.getPath('userData'),'db','lanhu_db')
 
 var db = new sqlite3.Database(dbFilePath);
 
-
-function createImageFolderTable(){
-    db.run("create table if not exists imageFolder(id integer primary key autoincrement,t_id text,p_id text,image_id text,name text,sketch_id text,local_path text)",(err) =>{  
-        
-    }); 
-}
-
 function createTeamTable(){
     db.run("create table if not exists Team(id integer primary key autoincrement,t_id text,name text,local_path text)",(err) =>{  
-        
-    }); 
-}
-
-
-function createProjectTable(){
-    db.run("create table if not exists Project(id integer primary key autoincrement,t_id text,p_id text,name text,local_path text)",(err) =>{  
         
     }); 
 }
@@ -213,9 +199,7 @@ function getWheres(table_name,dict){
 }
 
 var table_dict = {
-    'imageFolder':['t_id','p_id','image_id'],
     'Team':['t_id'],
-    'Project':['p_id']
 }
 
 
