@@ -6,7 +6,7 @@ const sqlite = global.sqlite3
 
 
 
-var dbFilePath = pathTool.join(electron.app.getPath('userData'),'db','lanhu_db')
+var dbFilePath = pathTool.join(electron.app.getPath('userData'),'db','file_db')
 
 var db = new sqlite3.Database(dbFilePath);
 
