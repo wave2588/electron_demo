@@ -2,7 +2,8 @@ const electron = require('electron');
 const storage = require('electron-json-storage')
 const fs = require('fs')
 const pathTool = require('path')
-const sqlite = global.sqlite3
+const sqlite = require('sqlite3').verbose();
+
 
 
 
