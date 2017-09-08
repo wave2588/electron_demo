@@ -1,6 +1,6 @@
 const {app, BrowserWindow} = require('electron')
 
-const sqlite = require('sqlite3')
+// const sqlite = require('sqlite3')
 app.on('ready', function(){
   var mainWindow = new BrowserWindow({
     width: 800,
@@ -9,6 +9,6 @@ app.on('ready', function(){
 
 
 
-  console.log(1111)
+  // console.log(1111)
 
 })
