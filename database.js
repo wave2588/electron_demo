@@ -11,135 +11,153 @@ var dbFilePath = pathTool.join(electron.app.getPath('userData'),'db','file_db')
 
 var db = new sqlite3.Database(dbFilePath);
 
-function createTeamTable(){
-    db.run("create table if not exists Team(id integer primary key autoincrement,t_id text,name text,local_path text)",(err) =>{  
-        
-    }); 
+function createTeamTable() {
+    
+    db.run("create table if not exists Team(id integer primary key autoincrement,t_id text,role text,name text,local_name text,user_id text)", (err) => {
+        if (err) {
+            console.log('create team table error', err)
+        }
+    });
 }
 
-function insert(table_name,dict,callback){
-
+function baseInsert(table_name, dict, callback) {
+   
     var findKeys = table_dict[table_name]
 
     var findDict = {}
-    findKeys.forEach(function(key) {
+    findKeys.forEach(function (key) {
         var value = dict[key];
         findDict[key] = value;
     }, this);
 
-    find(table_name,findDict,(data) => {
+    baseFind(table_name, findDict, (data) => {
 
-        if(data){
-            
+        if (data) {
+
             /// update
-            update(table_name,dict,(err) => {
+            baseUpdate(table_name, dict, (err) => {
                 callback(err)
             })
 
-        }else{
+        } else {
 
             /// insert
             var keys = Object.keys(dict)
-            var keys_str = keys.slice(',');                
+            var keys_str = keys.slice(',');
 
-            var value_str = '';
-            for(var i = 0; i < keys.length; i++){
+            var value_keys_str = '';
+
+            var value_dict = {}
+            for (var i = 0; i < keys.length; i++) {
                 var key = keys[i]
                 var value = dict[key]
-                if(keys.length - 1 == i){
-                    // value_str = value_str + '\'' + value + '\''
-                    value_str += `'${value}'`
-                }else{
-                    // value_str = value_str + '\'' + value + '\'' + ','
-                    value_str += `'${value}',`
+
+                var $key = `$${key}`
+
+                if (keys.length - 1 == i) {
+                    value_keys_str += $key
+                } else {
+                    value_keys_str += `${$key},`
                 }
+
+                value_dict[$key] = value
             }
 
-            var sql = 'INSERT INTO ' + table_name + ' (' + keys_str + ') ' + 'VALUES' + ' (' + value_str + ')';
-            db.run(sql,(err) => {
-                callback(err);
-            })            
+            var sql = `INSERT INTO ${table_name} (${keys_str}) VALUES (${value_keys_str})`
+            db.run(sql, value_dict, (err) => {
+                if (err) console.log('insert-->:', err, sql);
+                callback(err)
+            })
         }
     })
 }
 
-function update(table_name,dict,callback){
 
-    var keys = Object.keys(dict);
+function baseUpdate(table_name, dict, callback) {
+   
+    var findKeys = table_dict[table_name];
 
-    var valur_arr = []
-    var str = ''
-    for(var i = 0; i < keys.length; i++){
-        var key = keys[i]
+    var wheres_arr = [];
+    var value_keys_arr = [];
+
+    var value_dict = {};
+
+    for (var key in dict) {
+        var value = dict[key];
+        if (findKeys.indexOf(key) == -1) {
+            value_keys_arr.push(key)
+        } else {
+            wheres_arr.push(key)
+        }
+        var $key = `$${key}`;
+        value_dict[$key] = value;
+    }
+
+    var keys_str = '';
+    for (var index in value_keys_arr) {
+        var key = value_keys_arr[index]
         var value = dict[key]
-
-        if(keys.length - 1 == i){
-            str = str + key + ' = ' + value
-        }else{
-            str = str + key + ' = ' + value + ', '
+        if (value_keys_arr.length - 1 == index) {
+            keys_str += `${key} = $${key}`
+        } else {
+            keys_str += `${key} = $${key},`
         }
     }
 
-    var wheres = getWheres(table_name,dict)
-    
-    var sql = 'UPDATE ' + table_name + ' SET ' + str + ' WHERE ' + wheres
-    db.run(sql,(err) => {
+    var wheres = '';
+    for (var index in wheres_arr) {
+        var find_key = wheres_arr[index];
+        if (wheres_arr.length - 1 == index) {
+            wheres += `${find_key} = $${find_key}`
+        } else {
+            wheres += `${find_key} = $${find_key} and `
+        }
+    }
+
+    var sql = `UPDATE ${table_name} SET ${keys_str} WHERE ${wheres}`
+    db.run(sql, value_dict, (err) => {
+        if (err) console.log('update-->:', err, sql);
         callback(err)
     })
 }
 
 /// 默认根据findDataKeys去查询
-function find(table_name,dict,callback){
+function baseFind(table_name, dict, callback) {
     
-    var wheres = getWheres(table_name,dict)
-    var sql = 'SELECT * FROM ' + table_name + ' WHERE ' + wheres    
-    db.all(sql,(err,data) => {  
-        if (err){            
-            console.log('FAIL to retrieve data ' + err);
-            callback(null);
-        } else {
-            if(data.length == 0){
-                callback(null);                              
-            }else{
-                callback(data);                                
-            }
-        }
-    })
-}
-
-function findAll(table_name,callback){
-    var sql = `SELECT * FROM ${table_name}`;
-    db.all(sql,(err,data) => {
-        if(err){
-            console.log('FAIL to retrieve data ' + err);
-            callback(null);
-        }else{
-            if(data.length == 0){
-                callback(null);
-            }else{
-                callback(data);
-            }
-        }
-    })
-}
-
-/// 根据字典里的条件去查询,支持多个条件,与find不同
-function findByDict(table_name,dict,callback){
-
-    var keys = Object.keys(dict);
+    var findKeys = table_dict[table_name];
 
     var wheres = '';
-    for (var index in keys) {
-        var key = keys[index];
-        var value = dict[key];
-        if (index == keys.length - 1) {
-            wheres += `${key} = '${value}'`
+
+    var value_dict = {};
+
+    for (var index in findKeys) {
+        var find_key = findKeys[index];
+        var find_value = dict[find_key];
+
+        var $find_key = `$${find_key}`;
+        if (findKeys.length - 1 == index) {
+            wheres += `${find_key} = ${$find_key}`;
         } else {
-            wheres += `${key} = '${value}' and `
+            wheres += `${find_key} = ${$find_key} and `;
         }
+
+        value_dict[$find_key] = find_value;
     }
 
     var sql = `SELECT * FROM ${table_name} WHERE ${wheres}`
+    db.all(sql, value_dict, (err, data) => {
+        if (err) console.log('find-->:', err, sql);
+        if (err || data.length == 0) {
+            callback(null);
+        } else {
+            callback(data);
+        }
+    })
+}
+
+function baseFindAll(table_name, callback) {
+   
+    var sql = `SELECT * FROM ${table_name}`;
     db.all(sql, (err, data) => {
         if (err) {
             console.log('FAIL to retrieve data ' + err);
@@ -154,71 +172,132 @@ function findByDict(table_name,dict,callback){
     })
 }
 
-function remove(table_name,dict,callback){
-    var wheres = getWheres(table_name,dict)    
-    var sql = 'DELETE FROM ' + table_name + ' WHERE ' + wheres
-    db.run(sql,(err) => {
-        callback(err)
+/// 根据字典里的条件去查询,支持多个条件,与find不同
+function baseFindByDict(table_name, dict, callback) {
+    
+    var findKeys = table_dict[table_name];
+
+    var wheres = '';
+
+    var value_dict = {};
+
+    var keys = Object.keys(dict);
+
+    for (var index in keys) {
+        var key = keys[index];
+        var $key = `$${key}`;
+        var value = dict[key];
+
+        if (keys.length - 1 == index) {
+            wheres += `${key} = ${$key}`;
+        } else {
+            wheres += `${key} = ${$key} and `;
+        }
+        value_dict[$key] = value;
+    }
+
+    var sql = `SELECT * FROM ${table_name} WHERE ${wheres}`
+    db.all(sql, value_dict, (err, data) => {
+        if (err) console.log('find-->:', err, sql);
+        if (err || data.length == 0) {
+            callback(null);
+        } else {
+            callback(data);
+        }
     })
 }
 
-function removeAll(table_name,callback){
+function baseRemove(table_name, dict, callback) {
+    
+    var findKeys = table_dict[table_name];
 
+    var wheres = '';
+
+    var value_dict = {};
+
+    for (var index in findKeys) {
+        var find_key = findKeys[index];
+        var find_value = dict[find_key];
+
+        var $find_key = `$${find_key}`;
+        if (findKeys.length - 1 == index) {
+            wheres += `${find_key} = ${$find_key}`;
+        } else {
+            wheres += `${find_key} = ${$find_key} and `;
+        }
+
+        value_dict[$find_key] = find_value;
+    }
+
+    var sql = `DELETE FROM ${table_name} WHERE ${wheres}`
+    db.run(sql, value_dict, (err) => {
+        if (err) console.log('remove-->:', err, sql);
+        callback(err);
+    })
+}
+
+function baseRemoveByDict(table_name, dict, callback) {
+    
+    var findKeys = table_dict[table_name];
+
+    var wheres = '';
+
+    var value_dict = {};
+
+    var keys = Object.keys(dict);
+
+    for (var index in keys) {
+        var key = keys[index];
+        var $key = `$${key}`;
+        var value = dict[key];
+
+        if (keys.length - 1 == index) {
+            wheres += `${key} = ${$key}`;
+        } else {
+            wheres += `${key} = ${$key} and `;
+        }
+        value_dict[$key] = value;
+    }
+
+    var sql = `DELETE FROM ${table_name} WHERE ${wheres}`;
+    db.run(sql,value_dict, (err) => {
+        if (err) console.log('removeByDict-->:', err, sql);
+        callback(err);
+    })
+}
+
+function baseRemoveAll(table_name, callback) {
+    
     var sql = `DELETE FROM ${table_name}`
-    db.run(sql,(err) => {        
-        if(err){
+
+    db.run(sql, (err) => {
+        if (err) {
             callback(err)
-        }else{
-            var resetSql = `UPDATE sqlite_sequence set seq=0 where name= ${table_name}`
-            db.run(resetSql,(err) => {
+        } else {
+            var resetSql = `UPDATE sqlite_sequence set seq=0 where name= '${table_name}'`
+            db.run(resetSql, (err) => {
                 callback(err)
             })
         }
     })
 }
 
-
-/// 查询时候的条件语句
-function getWheres(table_name,dict){
-
-    var findKeys = table_dict[table_name]
-    
-    var wheres = ''    
-    for (var i = 0; i < findKeys.length; i++){
-        var key = findKeys[i]
-        var value = dict[key]
-
-        if(findKeys.length - 1 ==  i){
-            var str = key + ' = ' + '\'' + value  + '\' '
-            wheres = wheres + str
-        }else{
-            var str = key + ' = ' + '\'' + value  + '\' ' + 'and '
-            wheres = wheres + str
-        }
-    }
-    return wheres
-}
-
 var table_dict = {
-    'Team':['t_id'],
+    'Team': ['t_id'],
 }
 
-
-
-export default{
-    createImageFolderTable,
+export default {
     createTeamTable,
-    createProjectTable,
 
-    insert,
-    find,
-    remove,
-    update,
-    removeAll,
-    findAll,
-    findByDict
+    baseInsert,
+    baseFind,
+    baseRemove,
+    baseUpdate,
+    baseRemoveByDict,
+    baseRemoveAll,
+    baseFindAll,
+    baseFindByDict
 }
-
 
 
 

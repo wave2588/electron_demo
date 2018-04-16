@@ -10,45 +10,45 @@ function initDB(){
     dbFile.createTeamTable()
 }
 
-async function insert(dict){
+async function insertSync(dict){
        
     return new Promise(function(re, reject){
-        dbFile.insert(table_name,dict,re)
+        dbFile.baseInsert(table_name,dict,re)
     })
 }   
 
-async function find(dict){      
+async function findSync(dict){      
     
     return new Promise(function(re, reject){
-        dbFile.find(table_name,dict,re)
+        dbFile.baseFind(table_name,dict,re)
     })
 }
 
-async function remove(dict){
+async function removeSync(dict){
 
     return new Promise(function(re, reject){
-        dbFile.remove(table_name,dict,re)
+        dbFile.baseRemove(table_name,dict,re)
     })
 }
 
-async function removeAll(){
+async function removeAllSync(){
 
     return new Promise(function(re, reject){
-        dbFile.removeAll(table_name,re)
+        dbFile.baseRemoveAll(table_name,re)
     })
 }
 
-async function findAll(){
+async function findAllSync(){
 
     return new Promise(function(re, reject){
-        dbFile.findAll(table_name,re)
+        dbFile.baseFindAll(table_name,re)
     })
 }
 
-async function findByDict(dict){
+async function findByDictSync(dict){
 
     return new Promise(function(re, reject){
-        dbFile.findByDict(table_name,dict,re)
+        dbFile.baseFindByDict(table_name,dict,re)
     })
 }
 
@@ -56,11 +56,11 @@ async function findByDict(dict){
 
 export default{
     initDB,
-    insert,
-    find,
-    remove,
-    removeAll,
-    findAll,
-    findByDict
+    insertSync,
+    findSync,
+    removeSync,
+    removeAllSync,
+    findAllSync,
+    findByDictSync
 }
 
