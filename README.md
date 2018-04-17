@@ -17,6 +17,10 @@ npm run build
 # run unit & end-to-end tests
 npm test
 
+# 如果出现找不到 "electron-v1.7-darwin-x64" 错误
+npm run postinstall
+or
+npm run rebuild:sqlite3
 
 ```
 

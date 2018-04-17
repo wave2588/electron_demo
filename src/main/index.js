@@ -1,4 +1,9 @@
 import { app, BrowserWindow } from 'electron'
+const electron = require('electron');
+const ipc = electron.ipcMain
+const UUID = require('uuid')
+
+import userDB from './../database/userTable.js'
 
 /**
  * Set `__static` path to static files in production
@@ -30,7 +35,11 @@ function createWindow () {
   })
 }
 
-app.on('ready', createWindow)
+app.on('ready', () => {
+  createWindow();
+
+  userDB.initDB();
+})
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -43,6 +52,32 @@ app.on('activate', () => {
     createWindow()
   }
 })
+
+ipc.on('insert_notification', (event) => {
+  insert_action();
+})
+
+ipc.on('remove_notification', (event) => {
+  remove_action();
+})
+
+async function insert_action(){
+  
+  await userDB.insertSync({
+    user_id: UUID.v4(),
+    email: '15711367321@163.com',
+    user_name: 'wave'
+  })
+}
+
+async function remove_action(){
+
+}
+
+/**
+ * 这里只写了插入的方法,删除,查询,同理...
+ */
+
 
 /**
  * Auto Updater
